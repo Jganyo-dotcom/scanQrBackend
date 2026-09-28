@@ -13,8 +13,6 @@ const router = express.Router();
 // 1. Creation Gateway -> POST /api/qrs/create
 router.post("/create", protect, createQrCode);
 
-router.get("/:shortId", handleRedirect);
-
 // 2. Fetch User History List -> GET /api/qrs/my-qrs
 router.get("/my-qrs", protect, getUserQrCodes);
 
@@ -24,5 +22,7 @@ router.get("/my-qrs", protect, getUserQrCodes);
 router.delete("/delete/:id", protect, deleteQrCode);
 
 router.patch("/update-destination/:id", protect, updateQrDestination);
+
+router.get("/:shortId", handleRedirect);
 
 export default router;
