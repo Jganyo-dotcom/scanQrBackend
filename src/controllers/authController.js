@@ -2,6 +2,9 @@ import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Joi from "joi";
+import crypto from "node:crypto";
+import ApiKey from "../models/ApiKey.js";
+import QrCode from "../models/QrCode.js";
 
 // Validation Schemas using Joi
 const registerSchema = Joi.object({
@@ -148,12 +151,38 @@ const updatePasswordSchema = Joi.object({
 
 // @desc    Get current user profile details
 // @route   GET /api/users/profile
+
+
 export const getUserProfile = async (req, res) => {
-  // req.user is already populated by our protect middleware
-  res.status(200).json({
-    status: "success",
-    user: req.user,
-  });
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ status: "fail", message: "User not found." });
+    }
+
+    // Find highest qrNumber sequence created by this user
+    const lastQr = await QrCode.findOne({ userId })
+      .sort({ qrNumber: -1 })
+      .exec();
+
+    const totalQrsCreated = lastQr?.qrNumber || 0;
+
+    res.status(200).json({
+      status: "success",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan || "Free Tier",
+      },
+      totalQrsCreated, // 🚀 Lifetime non-decrementing creation count
+    });
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ status: "error", message: err.message });
+  }
 };
 
 // @desc    Update user profile (Name/Email)
@@ -220,6 +249,123 @@ export const updateUserPassword = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "Password changed successfully!",
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
+// =================================---------
+// SECTION 1: ACCOUNT PROFILE LIFECYCLE MANAGEMENT
+// =================================---------
+
+export const createApiKey = async (req, res) => {
+  try {
+    const { keyName } = req.body;
+
+    // Generate secure random string bytes
+    const rawSecret = crypto.randomBytes(24).toString("hex");
+    const clearTextApiKey = `dj_live_${rawSecret}`;
+
+    // Grab the first 14 characters to save as a safe visual prefix string
+    const prefix = clearTextApiKey.substring(0, 14) + "...";
+
+    // Create the secure cryptographically irreversible SHA-256 database storage hash comparison signature
+    const hashedKey = crypto
+      .createHash("sha256")
+      .update(clearTextApiKey)
+      .digest("hex");
+
+    const newKeyRecord = await ApiKey.create({
+      userId: req.user._id,
+      name: keyName || "Production Developer Token Key",
+      prefix,
+      keyHash: hashedKey,
+      isActive: true,
+    });
+
+    // Return the raw plain text key ONLY ONCE. It can never be recovered or queried again after this!
+    res.status(201).json({
+      status: "success",
+      message:
+        "Developer token created cleanly. Record this clear text secret key somewhere safe.",
+      apiKey: clearTextApiKey, // The developer copies this string right now
+      keyDetails: newKeyRecord,
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
+// @desc    2. List all active API Key profiles belonging to the logged-in user session
+// @route   GET /v1/users/api-keys
+// @access  Protected
+export const getMyApiKeys = async (req, res) => {
+  try {
+    const keys = await ApiKey.find({ userId: req.user._id }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json({ status: "success", data: keys });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
+// @desc    3. Toggle API Key Activation Status (Active <-> Inactive/Paused)
+// @route   PATCH /v1/users/api-keys/toggle/:id
+// @access  Protected
+export const toggleApiKeyStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const apiKeyRecord = await ApiKey.findOne({
+      _id: id,
+      userId: req.user._id,
+    });
+
+    if (!apiKeyRecord) {
+      return res.status(404).json({
+        status: "fail",
+        message: "API key token profile configuration not found.",
+      });
+    }
+
+    // Flips the boolean state natively
+    apiKeyRecord.isActive = !apiKeyRecord.isActive;
+    await apiKeyRecord.save();
+
+    res.status(200).json({
+      status: "success",
+      message: `Key successfully ${apiKeyRecord.isActive ? "activated" : "deactivated and paused"}.`,
+      data: apiKeyRecord,
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
+// @desc    4. Permanently Delete/Revoke an automated Developer API Key
+// @route   DELETE /v1/users/api-keys/delete/:id
+// @access  Protected
+export const deleteApiKey = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const apiKeyRecord = await ApiKey.findOne({
+      _id: id,
+      userId: req.user._id,
+    });
+
+    if (!apiKeyRecord) {
+      return res.status(404).json({
+        status: "fail",
+        message: "API key token profile not found or unauthorized.",
+      });
+    }
+
+    await apiKeyRecord.deleteOne();
+    res.status(200).json({
+      status: "success",
+      message:
+        "API Key permanently deleted and revoked from platform access gates.",
     });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });

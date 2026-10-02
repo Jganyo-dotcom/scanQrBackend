@@ -8,6 +8,10 @@ import {
   getUserProfile,
   updateUserProfile,
   updateUserPassword,
+  createApiKey,
+  getMyApiKeys,
+  toggleApiKeyStatus,
+  deleteApiKey,
 } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -20,6 +24,11 @@ router.get("/status", checkAuthStatus); // This is what your Dashboard calls on 
 
 router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateUserProfile);
-router.put("/password", protect, updateUserPassword);
+router.patch("/password", protect, updateUserPassword);
+
+router.post("/api-keys/create", protect, createApiKey);
+router.get("/api-keys", protect, getMyApiKeys);
+router.patch("/api-keys/toggle/:id", protect, toggleApiKeyStatus);
+router.delete("/api-keys/delete/:id", protect, deleteApiKey);
 
 export default router;

@@ -17,7 +17,13 @@ const qrCodeSchema = new mongoose.Schema(
     qrType: {
       type: String,
       required: true,
-      enum: ["url", "wifi", "vcard", "text"], // Matches the 4 types currently on your frontend
+      enum: ["url", "wifi", "vcard", "text","image"], // Matches the 4 types currently on your frontend
+    },
+    externalRefId: {
+      type: String,
+      trim: true,
+      unique: true, // Safeguards against duplicate system cross-references
+      default: null,
     },
     isDynamic: {
       type: Boolean,
@@ -36,6 +42,10 @@ const qrCodeSchema = new mongoose.Schema(
       sparse: true, // Prevents conflicts with null values on static codes
     },
     scanCount: {
+      type: Number,
+      default: 0,
+    },
+    qrNumber: {
       type: Number,
       default: 0,
     },

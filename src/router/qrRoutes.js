@@ -5,8 +5,11 @@ import {
   updateQrDestination,
   deleteQrCode,
   handleRedirect,
+  getQrAnalytics,
+  uploadImageFile,
 } from "../controllers/qrController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { upload } from "../../utils/multer.js";
 
 const router = express.Router();
 
@@ -23,6 +26,12 @@ router.delete("/delete/:id", protect, deleteQrCode);
 
 router.patch("/update-destination/:id", protect, updateQrDestination);
 
+// Gateway for aggregated real-time database queries -> GET /v1/qrs/analytics
+router.get("/analytics", protect, getQrAnalytics);
+
 router.get("/:shortId", handleRedirect);
+
+// 🚀 2. REWRITTEN SECURE ROUTE HIGHWAY: Fully protected by your header Bearer tokens middleware
+router.post("/upload-image", protect, upload.single("image"), uploadImageFile);
 
 export default router;
