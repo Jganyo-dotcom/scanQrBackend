@@ -26,10 +26,17 @@ export const createQrCode = async (req, res) => {
     } = req.body;
 
     const userId = req.user ? req.user._id : null;
-    if (userId) {
+    if (!userId) {
       return res.status(400).json({
         status: "success",
         message: "You dont have an account , create one for free",
+      });
+    }
+
+    if (!isDynamic) {
+      return res.status(400).json({
+        status: "success",
+        message: "created",
       });
     }
 
