@@ -40,6 +40,13 @@ export const createQrCode = async (req, res) => {
       });
     }
 
+    if (qrType === "wifi" || qrType === "text") {
+      return res.status(400).json({
+        status: "success",
+        message: "created but cannot be tracked yet",
+      });
+    }
+
     if (isDynamic && !userId) {
       return res.status(401).json({
         status: "fail",
