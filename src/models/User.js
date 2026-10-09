@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
     plan: {
       type: String,
       required: true,
+      default:"free",
       enum: ["premium", "free"],
     },
   },
