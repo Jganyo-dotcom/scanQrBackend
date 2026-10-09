@@ -1,21 +1,27 @@
 // @desc    Server-Side Rendered (SSR) HTML Mobile Landing Page for Digital business cards (vCard)
 export const vCardViewerTemplate = (campaignName, vCardRawText, shortId) => {
-  // Split the text cleanly by newlines to inspect fields line by line
-  const vCardLines = vCardRawText.split(/\r?\n/);
+  // Clean string line breaks to handle standard or compressed vCard parameters smoothly
+  const normalizedText = vCardRawText.replace(/END:VCARD/i, "\nEND:VCARD");
+  const vCardLines = normalizedText.split(/\r?\n/);
 
   // Helper function to find a specific key prefix line and extract its value
   const getVCardValue = (prefix) => {
     const targetLine = vCardLines.find((line) =>
-      line.toUpperCase().startsWith(prefix.toUpperCase()),
+      line.toUpperCase().trim().startsWith(prefix.toUpperCase()),
     );
     if (!targetLine) return "";
     return targetLine.substring(targetLine.indexOf(":") + 1).trim();
   };
 
-  // Extract raw text parameters natively out of the vCard payload
+  // Extract raw text parameters natively out of your vCard payload
   let fullName = getVCardValue("N:");
   const phoneNumber = getVCardValue("TEL") || "No phone listed";
-  const emailAddress = getVCardValue("EMAIL") || "";
+
+  // 🚀 FIXED: Checks for standard "EMAIL:" or your layout's custom "Email:" prefix fields
+  let rawEmail = getVCardValue("EMAIL") || getVCardValue("Email") || "";
+  const emailAddress = rawEmail.toUpperCase().includes("END:VCARD")
+    ? rawEmail.substring(0, rawEmail.toUpperCase().indexOf("END:VCARD")).trim()
+    : rawEmail.trim();
   const orgName = getVCardValue("ORG") || "Digital Contact Card";
 
   // Clean up semicolon naming conventions if saved as "Ganyo;James"
@@ -29,7 +35,7 @@ export const vCardViewerTemplate = (campaignName, vCardRawText, shortId) => {
   }
 
   // Sanitize raw text to prevent it from crashing the client-side download button script
-  const sanitizedVCardText = vCardRawText
+  const sanitizedVCardText = normalizedText
     .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
     .replace(/\r?\n/g, "\\n");
@@ -37,7 +43,7 @@ export const vCardViewerTemplate = (campaignName, vCardRawText, shortId) => {
   // Generate the initial letter bubble asset character
   const initialLetter = fullName.charAt(0).toUpperCase();
 
-  // 🚀 CLEAN BLOCK GENERATION: Builds the Email UI row conditionally without breaking the string parser tree
+  // 🚀 CLEAN CONDITIONAL BLOCK: Renders the Email row beautifully if available
   let emailHtmlRow = "";
   if (emailAddress && emailAddress !== "No email listed") {
     emailHtmlRow = `
@@ -62,11 +68,11 @@ export const vCardViewerTemplate = (campaignName, vCardRawText, shortId) => {
         .avatar-frame { width: 80px; height: 80px; background-color: #eff6ff; color: #2563eb; font-size: 2rem; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; border: 2px solid #dbeafe; text-transform: uppercase; }
         h2 { color: #0f172a; margin: 0 0 0.25rem 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
         .org-label { color: #2563eb; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 1.5rem; letter-spacing: 0.05em; }
-        .info-box { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; text-align: left; }
-        .info-row { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.75rem; }
+        .info-box { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 1.25rem 1rem; margin-bottom: 1.5rem; text-align: left; }
+        .info-row { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.85rem; }
         .info-row:last-child { margin-bottom: 0; }
-        .info-label { font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
-        .info-value { font-size: 0.9rem; color: #334155; font-weight: 500; }
+        .info-label { font-size: 0.725rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em; }
+        .info-value { font-size: 0.95rem; color: #334155; font-weight: 500; word-break: break-all; }
         .btn-save { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.85rem 1.5rem; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3); transition: all 0.15s ease; cursor: pointer; }
         .btn-save:hover { background-color: #1d4ed8; transform: translateY(-1px); }
         .footer-brand { margin-top: 2rem; font-size: 0.7rem; color: #94a3b8; letter-spacing: 0.075em; text-transform: uppercase; font-weight: 600; }

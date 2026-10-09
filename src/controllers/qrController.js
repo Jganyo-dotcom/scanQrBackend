@@ -6,8 +6,6 @@ import User from "../models/User.js";
 import { fileViewerTemplate } from "../../templates/fileViewerTemplate.js";
 import { vCardViewerTemplate } from "../../templates/vCardViewerTemplate.js";
 
-
-
 // Helper to generate a fast, unique 6-character routing tag
 const generateShortId = () => Math.random().toString(36).substring(2, 8);
 const generateFallbackRefId = () =>
@@ -28,7 +26,12 @@ export const createQrCode = async (req, res) => {
     } = req.body;
 
     const userId = req.user ? req.user._id : null;
-    console.log(userId);
+    if (userId) {
+      return res.status(400).json({
+        status: "success",
+        message: "You dont have an account , create one for free",
+      });
+    }
 
     if (isDynamic && !userId) {
       return res.status(401).json({
@@ -77,7 +80,8 @@ export const createQrCode = async (req, res) => {
 
     // Determine the next non-decrementing QR sequence number for this user
     let nextQrNumber = 1;
-    if (userId) {
+
+    if (!userId) {
       const highestQr = await QrCode.findOne({ userId })
         .sort({ qrNumber: -1 })
         .exec();

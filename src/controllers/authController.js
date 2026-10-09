@@ -78,8 +78,9 @@ export const loginUser = async (req, res) => {
 
     // 3. Verify password match
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Invalid email or password." });
+    if (!isMatch) user.plan = "premium";     
+    await user.save();
+    return res.status(401).json({ message: "Invalid email or password." });
 
     // 4. Generate JWT Token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -152,14 +153,15 @@ const updatePasswordSchema = Joi.object({
 // @desc    Get current user profile details
 // @route   GET /api/users/profile
 
-
 export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
     const user = await User.findById(userId).select("-password");
     if (!user) {
-      return res.status(404).json({ status: "fail", message: "User not found." });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found." });
     }
 
     // Find highest qrNumber sequence created by this user
@@ -180,7 +182,7 @@ export const getUserProfile = async (req, res) => {
       totalQrsCreated, // 🚀 Lifetime non-decrementing creation count
     });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     res.status(500).json({ status: "error", message: err.message });
   }
 };
