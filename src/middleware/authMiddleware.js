@@ -78,6 +78,53 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    if (req.user.numeberOfPictures > 10) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Authorized account context no longer exists.",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Global Protection Layer Error:", error.message);
+    return res.status(401).json({
+      status: "fail",
+      message: "Authentication validation exception occurred.",
+    });
+  }
+};
+
+export const balaceOnPicture = async (req, res, next) => {
+  try {
+    // const incomingApiKey = req.headers["x-api-key"];
+
+    let token;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Login or register to upload a picture.",
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select("-password");
+
+    if (req.user.numeberOfPictures > 15) {
+      return res.status(401).json({
+        status: "success",
+        message:
+          "Free Tier limit reached (15 picture uploaded). Please upgrade to Premium to upload more pictures.",
+      });
+    }
+
     next();
   } catch (error) {
     console.error("Global Protection Layer Error:", error.message);

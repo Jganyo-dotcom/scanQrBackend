@@ -20,8 +20,12 @@ const userSchema = new mongoose.Schema(
     plan: {
       type: String,
       required: true,
-      default:"free",
+      default: "free",
       enum: ["premium", "free"],
+    },
+    numeberOfPictures: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true },

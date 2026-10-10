@@ -17,7 +17,7 @@ const qrCodeSchema = new mongoose.Schema(
     qrType: {
       type: String,
       required: true,
-      enum: ["url", "wifi", "vcard", "text","image"], // Matches the 4 types currently on your frontend
+      enum: ["url", "wifi", "vcard", "text", "image"], // Matches the 4 types currently on your frontend
     },
     externalRefId: {
       type: String,

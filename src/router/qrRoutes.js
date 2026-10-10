@@ -8,7 +8,7 @@ import {
   getQrAnalytics,
   uploadImageFile,
 } from "../controllers/qrController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { balaceOnPicture, protect } from "../middleware/authMiddleware.js";
 import { upload } from "../../utils/multer.js";
 
 const router = express.Router();
@@ -32,6 +32,12 @@ router.get("/analytics", protect, getQrAnalytics);
 router.get("/:shortId", handleRedirect);
 
 // 🚀 2. REWRITTEN SECURE ROUTE HIGHWAY: Fully protected by your header Bearer tokens middleware
-router.post("/upload-image", protect, upload.single("image"), uploadImageFile);
+router.post(
+  "/upload-image",
+  balaceOnPicture,
+  protect,
+  upload.single("image"),
+  uploadImageFile,
+);
 
 export default router;
